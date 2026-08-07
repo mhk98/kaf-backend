@@ -5,4 +5,9 @@
 Archive.zip
 Archive/
 scripts/
-images/
+images/*
+!images/storefront/
+images/storefront/*
+!images/storefront/kaf-*.png
+!images/storefront/catalog-product-*.png
+!images/storefront/partner-*.svg

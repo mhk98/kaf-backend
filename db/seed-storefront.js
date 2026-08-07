@@ -37,15 +37,27 @@ async function seed() {
   const categories = [];
   for (let i = 0; i < categoryNames.length; i++) {
     const name = categoryNames[i];
-    const imageFile = writeAsset(`category-${i+1}.svg`, svg(name, "Shop collection", 600, 600, palettes[i % palettes.length]));
+    const imageFile = name === "Men"
+      ? "storefront/kaf-men-campaign.png"
+      : name === "Women"
+        ? "storefront/kaf-women-campaign.png"
+        : `storefront/catalog-product-${(i % 12) + 1}.png`;
     categories.push(await upsertBy(db.category, { name }, { name, imageFile, image: imageFile, status: "Active", isActive: true, frontView: true, sortOrder: i + 1 }));
   }
 
   const subs = {};
+  const children = {};
   for (const category of categories.slice(0, 5)) {
     const names = category.name === "Women" ? ["Tops", "Kurti", "Bottomwear"] : ["Topwear", "Bottomwear", "Essentials"];
     subs[category.Id] = [];
-    for (const name of names) subs[category.Id].push(await upsertBy(db.subcategory, { name, categoryId: category.Id }, { name, categoryId: category.Id, status: "Active" }));
+    for (const name of names) {
+      const subcategory = await upsertBy(db.subcategory, { name, categoryId: category.Id }, { name, categoryId: category.Id, status: "Active" });
+      subs[category.Id].push(subcategory);
+      children[subcategory.Id] = [];
+      for (const childName of name === "Bottomwear" ? ["Chinos", "Denim"] : ["New Arrival", "Premium Edit"]) {
+        children[subcategory.Id].push(await upsertBy(db.childcategory, { name: childName, subcategoryId: subcategory.Id }, { name: childName, subcategoryId: subcategory.Id, status: "Active" }));
+      }
+    }
   }
 
   const colors = [];
@@ -53,16 +65,25 @@ async function seed() {
     colors.push(await upsertBy(db.color, { name }, { name, hex, status: "Active" }));
   }
 
+  const partnerNames = ["Aster Group", "Bengal Works", "Dhaka Studio", "Northstar", "Padma Digital", "Shapla Foundation", "Vertex Labs", "Meghna Foods", "Urban Trust", "Delta Network", "Greenline", "Summit House"];
+  for (let i = 0; i < partnerNames.length; i++) {
+    const name = partnerNames[i];
+    const logo = writeAsset(`partner-${i + 1}.svg`, svg(name, "KAF Partner", 420, 180, palettes[i % palettes.length], "banner"));
+    await upsertBy(db.brand, { name }, { name, logo, linkUrl: null, sortOrder: i + 1, isActive: true, status: "Active" });
+  }
+
   const productWords = ["Essential Tee", "Premium Polo", "Comfort Shirt", "Classic Panjabi", "Everyday Trouser", "Urban Denim"];
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 80; i++) {
     const category = categories[i % categories.length];
     const name = `${category.name} ${productWords[i % productWords.length]} ${String(i+1).padStart(2,"0")}`;
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const main = writeAsset(`product-${i+1}.svg`, svg(name, "KAF Lifestyle", 900, 1100, palettes[i % palettes.length]));
-    const gallery = writeAsset(`product-${i+1}-detail.svg`, svg(`${name} Detail`, "Premium everyday wear", 900, 1100, palettes[(i+1) % palettes.length]));
+    const main = `storefront/catalog-product-${(i % 12) + 1}.png`;
+    const gallery = i % 3 === 0 ? "storefront/kaf-men-campaign.png" : i % 3 === 1 ? "storefront/kaf-women-campaign.png" : main;
+    const subcategory = subs[category.Id]?.[i % 3] || null;
+    const childcategory = subcategory ? children[subcategory.Id]?.[i % 2] : null;
     const product = await upsertBy(db.product, { slug }, {
       name, slug, sku: `KAF-${String(i+1).padStart(4,"0")}`, categoryId: category.Id,
-      subcategoryId: subs[category.Id]?.[i % 3]?.Id || null, file: main, images: [main, gallery], gallery: [main, gallery],
+      subcategoryId: subcategory?.Id || null, childcategoryId: childcategory?.Id || null, file: main, images: [main, gallery], gallery: [main, gallery],
       shortDescription: "Comfortable, versatile and made for everyday confidence.", description: "A thoughtfully selected KAF Lifestyle piece with dependable finishing and a comfortable fit.",
       bestDeals: i % 4 === 0 || i % 5 === 0, freeShipping: i % 6 === 0, status: "Active", date: new Date().toISOString().slice(0,10),
     });
@@ -78,11 +99,31 @@ async function seed() {
   for (const [groupName, prefix, count, width, height] of bannerGroups) {
     const group = await upsertBy(db.bannerCategory, { name: groupName }, { name: groupName, status: "Active", sortOrder: prefix === "slider" ? 1 : 2 });
     for (let i = 0; i < count; i++) {
-      const file = writeAsset(`${prefix}-${i+1}.svg`, svg(prefix === "slider" ? ["Everyday confidence", "New season essentials", "Made for your story"][i] : ["Free delivery picks", "Premium polos", "Fresh arrivals"][i], "Shop KAF Lifestyle", width, height, palettes[(i+2) % palettes.length], "banner"));
+      const realFiles = prefix === "slider"
+        ? ["storefront/kaf-hero-campaign.png", "storefront/kaf-men-campaign.png", "storefront/kaf-women-campaign.png"]
+        : ["storefront/kaf-men-campaign.png", "storefront/kaf-women-campaign.png", "storefront/catalog-product-1.png"];
+      const file = realFiles[i];
       await upsertBy(db.banner, { alt: `KAF ${prefix} ${i+1}` }, { alt: `KAF ${prefix} ${i+1}`, file, linkUrl: "/#collections", categoryId: group.Id, categoryName: groupName, status: "Active", sortOrder: i + 1 });
     }
   }
-  console.log("Storefront seed complete: 10 categories, 30 products, 6 banners, generated local SVG media.");
+  const homepageBannerGroups = [
+    { name: "Home Promo", prefix: "home-promo", size: [1000, 420], titles: ["Everyday essentials", "New season colors", "Comfort collection", "Weekend edit"] },
+    { name: "Home Story", prefix: "home-story", size: [900, 560], titles: ["Made for everyday confidence", "Thoughtful fabric and fit"] },
+    { name: "Home Bulk Order", prefix: "home-bulk", size: [1600, 360], titles: ["Bulk order and custom apparel"] },
+    { name: "Home Affiliate", prefix: "home-affiliate", size: [1600, 420], titles: ["Join the KAF community"] },
+  ];
+  for (let groupIndex = 0; groupIndex < homepageBannerGroups.length; groupIndex++) {
+    const groupData = homepageBannerGroups[groupIndex];
+    const group = await upsertBy(db.bannerCategory, { name: groupData.name }, { name: groupData.name, status: "Active", sortOrder: 10 + groupIndex });
+    for (let index = 0; index < groupData.titles.length; index++) {
+      const [width, height] = groupData.size;
+      const alt = groupData.titles[index];
+      const realFiles = ["storefront/kaf-men-campaign.png", "storefront/kaf-women-campaign.png", `storefront/catalog-product-${(groupIndex * 3 + index) % 12 + 1}.png`];
+      const file = realFiles[index] || realFiles[2];
+      await upsertBy(db.banner, { alt: `KAF ${groupData.prefix} ${index + 1}` }, { alt, file, linkUrl: "/#collections", categoryId: group.Id, categoryName: groupData.name, status: "Active", sortOrder: index + 1 });
+    }
+  }
+  console.log("Storefront seed complete: 10 categories, 80 products, homepage banners, generated local raster media.");
 }
 
 seed().then(() => db.sequelize.close()).catch(async (error) => { console.error(error); await db.sequelize.close(); process.exit(1); });

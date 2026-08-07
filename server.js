@@ -63,7 +63,6 @@ const ALLOWED_ORIGINS = new Set(
 
 const isLocalDevOrigin = (origin = "") =>
   /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(origin);
-
 const corsOptions = {
   origin: (origin, callback) => {
     // allow requests with no origin (e.g. mobile apps, curl, Postman)
