@@ -33,7 +33,7 @@ async function upsertBy(Model, where, values) {
 
 async function seed() {
   await db.ready;
-  const categoryNames = ["Men", "Women", "Kids", "Teens", "Sports", "Panjabi", "Polo", "Denim", "Accessories", "Free Delivery"];
+  const categoryNames = ["Men", "Women", "Kids", "Teens", "Sports", "Panjabi", "Polo", "Denim", "Accessories", "Free Delivery", "Footwear", "Bags"];
   const categories = [];
   for (let i = 0; i < categoryNames.length; i++) {
     const name = categoryNames[i];
@@ -41,7 +41,11 @@ async function seed() {
       ? "storefront/kaf-men-campaign.png"
       : name === "Women"
         ? "storefront/kaf-women-campaign.png"
-        : `storefront/catalog-product-${(i % 12) + 1}.png`;
+        : name === "Footwear"
+          ? "storefront/kaf-footwear.png"
+          : name === "Bags"
+            ? "storefront/kaf-bags.png"
+            : `storefront/catalog-product-${(i % 12) + 1}.png`;
     categories.push(await upsertBy(db.category, { name }, { name, imageFile, image: imageFile, status: "Active", isActive: true, frontView: true, sortOrder: i + 1 }));
   }
 
@@ -74,7 +78,7 @@ async function seed() {
 
   const productWords = ["Essential Tee", "Premium Polo", "Comfort Shirt", "Classic Panjabi", "Everyday Trouser", "Urban Denim"];
   for (let i = 0; i < 80; i++) {
-    const category = categories[i % categories.length];
+    const category = categories[i % 10];
     const name = `${category.name} ${productWords[i % productWords.length]} ${String(i+1).padStart(2,"0")}`;
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
     const main = `storefront/catalog-product-${(i % 12) + 1}.png`;
@@ -90,6 +94,37 @@ async function seed() {
     const existing = await db.variation.findOne({ where: { productId: product.Id, attribute: "M" } });
     const values = { productId: product.Id, colorId: colors[i % colors.length].Id, attribute: "M", size: ["M","L","XL"], oldPrice: 1290 + (i%5)*200, newPrice: 990 + (i%5)*180, stock: 12 + (i%8), availability: "in stock", sku: `${product.sku}-M` };
     if (existing) await existing.update(values); else await db.variation.create(values);
+  }
+
+  const newCategoryProducts = [
+    { category: "Footwear", image: "storefront/kaf-footwear.png", names: ["Minimal Court Sneaker", "Everyday Low Sneaker", "Classic Navy Sneaker", "Comfort Walk Sneaker", "Urban Lace Sneaker", "Premium Casual Sneaker", "Weekend Court Sneaker", "Essential Street Sneaker"] },
+    { category: "Bags", image: "storefront/kaf-bags.png", names: ["Structured Shoulder Bag", "Everyday Carry Bag", "Classic Navy Bag", "Premium Office Bag", "Weekend Shoulder Bag", "Urban Carry Bag", "Essential Day Bag", "Refined Crossbody Bag"] },
+  ];
+  let nextProductNumber = 81;
+  for (const group of newCategoryProducts) {
+    const category = categories.find((item) => item.name === group.category);
+    for (const productName of group.names) {
+      const name = `${group.category} ${productName}`;
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const sku = `KAF-${String(nextProductNumber).padStart(4, "0")}`;
+      const product = await upsertBy(db.product, { slug }, {
+        name, slug, sku, categoryId: category.Id, subcategoryId: null, childcategoryId: null,
+        file: group.image, images: [group.image], gallery: [group.image],
+        shortDescription: "A refined everyday essential designed for comfort and versatility.",
+        description: `A thoughtfully selected KAF Lifestyle ${group.category.toLowerCase()} piece with dependable finishing and everyday appeal.`,
+        bestDeals: nextProductNumber % 3 === 0, freeShipping: nextProductNumber % 4 === 0,
+        status: "Active", date: new Date().toISOString().slice(0, 10),
+      });
+      const existing = await db.variation.findOne({ where: { productId: product.Id, attribute: "Standard" } });
+      const values = {
+        productId: product.Id, colorId: colors[(nextProductNumber - 81) % colors.length].Id,
+        attribute: "Standard", size: ["Standard"], oldPrice: group.category === "Footwear" ? 2490 : 2190,
+        newPrice: group.category === "Footwear" ? 1990 : 1790, stock: 15 + (nextProductNumber % 6),
+        availability: "in stock", sku: `${sku}-STD`,
+      };
+      if (existing) await existing.update(values); else await db.variation.create(values);
+      nextProductNumber += 1;
+    }
   }
 
   const bannerGroups = [
@@ -123,7 +158,7 @@ async function seed() {
       await upsertBy(db.banner, { alt: `KAF ${groupData.prefix} ${index + 1}` }, { alt, file, linkUrl: "/#collections", categoryId: group.Id, categoryName: groupData.name, status: "Active", sortOrder: index + 1 });
     }
   }
-  console.log("Storefront seed complete: 10 categories, 80 products, homepage banners, generated local raster media.");
+  console.log("Storefront seed complete: 12 categories, 96 products, homepage banners, generated local raster media.");
 }
 
 seed().then(() => db.sequelize.close()).catch(async (error) => { console.error(error); await db.sequelize.close(); process.exit(1); });

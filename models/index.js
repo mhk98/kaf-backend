@@ -271,6 +271,15 @@ const ensureUserStatusColumn = async () => {
   );
 };
 
+const ensureUserPhoneOptional = async () => {
+  const queryInterface = db.sequelize.getQueryInterface();
+  const tableName = db.user.getTableName();
+  await queryInterface.changeColumn(tableName, "Phone", {
+    type: DataTypes.STRING,
+    allowNull: true,
+  });
+};
+
 const ensureUserDocumentColumns = async () => {
   const queryInterface = db.sequelize.getQueryInterface();
   const tableName = db.user.getTableName();
@@ -936,6 +945,7 @@ db.ready = db.sequelize
   .then(async () => {
     await ensureUserRoleColumn();
     await ensureUserStatusColumn();
+    await ensureUserPhoneOptional();
     await ensureUserDocumentColumns();
     await ensureNotificationColumns();
     await ensureSupplierStatusNoteColumns();

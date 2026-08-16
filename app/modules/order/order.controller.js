@@ -110,7 +110,11 @@ const bulkAssignOrdersToEmployee = catchAsync(async (req, res) => {
 });
 
 const trackOrdersByPhone = catchAsync(async (req, res) => {
-  const result = await OrderService.trackOrdersByPhoneFromDB(req.query.phone, req.query.invoiceId);
+  const result = await OrderService.trackOrdersByPhoneFromDB(
+    req.query.phone,
+    req.query.invoiceId,
+    { page: req.query.page, limit: req.query.limit },
+  );
   sendResponse(res, {
     statusCode: 200,
     success: true,

@@ -111,7 +111,7 @@ const generateOrderId = async () => {
     paranoid: false,
   });
   const nextNum = last ? last.Id + 1 : 1;
-  return `WZ-${String(nextNum).padStart(3, "0")}`;
+  return `KAF-${String(nextNum).padStart(3, "0")}`;
 };
 
 const parseOrderMeta = (note) => {
@@ -1024,22 +1024,50 @@ const getOrderByIdFromDB = async (id, currentUser = {}) => {
   return { ...withAssignmentUsers(plain), fraudGuard: await getFraudGuardForOrder(plain) };
 };
 
-const trackOrdersByPhoneFromDB = async (phone, invoiceId) => {
-  const normalized = String(phone || "").trim();
+const trackOrdersByPhoneFromDB = async (phone, invoiceId, options = {}) => {
+  const normalized = normalizePhone(phone);
   const normalizedInvoice = String(invoiceId || "").trim();
   if (!normalized && !normalizedInvoice) throw new ApiError(400, "Phone number or invoice ID is required");
 
+  const requestedPage = Number.parseInt(options.page, 10);
+  const requestedLimit = Number.parseInt(options.limit, 10);
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const limit = normalizedInvoice
+    ? 1
+    : Math.min(
+        Number.isFinite(requestedLimit) && requestedLimit > 0 ? requestedLimit : 5,
+        20,
+      );
+  const phoneVariants = [
+    normalized,
+    normalized.slice(-11),
+    normalized.startsWith("0") ? `88${normalized}` : normalized,
+  ].filter((value, index, values) => value && values.indexOf(value) === index);
   const where = normalizedInvoice
     ? { orderId: normalizedInvoice }
-    : { customerPhone: { [Op.like]: `%${normalized}%` } };
+    : { customerPhone: { [Op.in]: phoneVariants } };
 
-  const orders = await Order.findAll({
+  const { count, rows } = await Order.findAndCountAll({
     where,
-    limit: 20,
+    limit,
+    offset: normalizedInvoice ? 0 : (page - 1) * limit,
     order: [["Id", "DESC"]],
     paranoid: true,
   });
-  return orders.map(toPublicOrder);
+  const totalPages = normalizedInvoice ? (count ? 1 : 0) : Math.ceil(count / limit);
+
+  return {
+    orders: rows.map(toPublicOrder),
+    pagination: {
+      page: normalizedInvoice ? 1 : page,
+      limit,
+      total: count,
+      totalPages,
+      hasNextPage: !normalizedInvoice && page < totalPages,
+      hasPreviousPage: !normalizedInvoice && page > 1,
+    },
+    searchType: normalizedInvoice ? "invoice" : "phone",
+  };
 };
 
 const updateOrderInDB = async (id, payload) => {

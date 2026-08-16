@@ -2,7 +2,7 @@ const db = require("../../../models");
 const ApiError = require("../../../error/ApiError");
 
 const VALID_TYPES = [
-  "general", "social_media", "contact",
+  "general", "social_media", "contact", "floating_contact",
   "courier_api", "payment_gateway", "sms_gateway", "fraud_checker", "header", "footer", "website_footer", "order_block",
 ];
 
@@ -93,6 +93,10 @@ const normalizeSocialMediaData = (value) => {
     const url = normalizeSocialUrl(key, platform.url);
     if (!url) return acc;
     acc[`${key}Url`] = url;
+    if (key === "facebook") {
+      acc.facebookFollowers = String(platform.followers || "").trim() || null;
+      acc.facebookFollowing = String(platform.following || "").trim() || null;
+    }
     return acc;
   }, {});
 };
@@ -111,10 +115,11 @@ const normalizeSocialMediaStorage = (value) => {
 };
 
 const getPublic = async () => {
-  const [general, socialMedia, contact, header, footer, websiteFooter] = await Promise.all([
+  const [general, socialMedia, contact, floatingContact, header, footer, websiteFooter] = await Promise.all([
     db.siteSetting.findOne({ where: { settingType: "general" } }),
     db.siteSetting.findOne({ where: { settingType: "social_media" } }),
     db.siteSetting.findOne({ where: { settingType: "contact" } }),
+    db.siteSetting.findOne({ where: { settingType: "floating_contact" } }),
     db.siteSetting.findOne({ where: { settingType: "header" } }),
     db.siteSetting.findOne({ where: { settingType: "footer" } }),
     db.siteSetting.findOne({ where: { settingType: "website_footer" } }),
@@ -123,6 +128,7 @@ const getPublic = async () => {
   const generalData = normalizeSettingData(general?.data);
   const socialMediaData = normalizeSocialMediaData(socialMedia?.data);
   const contactData = normalizeSettingData(contact?.data);
+  const floatingContactData = normalizeSettingData(floatingContact?.data);
   const headerData = normalizeSettingData(header?.data);
   const footerData = normalizeSettingData(footer?.data);
   const websiteFooterData = normalizeSettingData(websiteFooter?.data);
@@ -140,6 +146,10 @@ const getPublic = async () => {
   const whatsappNumber = contactActive ? contactData.whatsappNumber || null : null;
   const contactWhatsappUrl = whatsappNumber
     ? `https://wa.me/${normalizePhoneForWhatsApp(whatsappNumber)}`
+    : null;
+  const floatingWhatsappNumber = floatingContactData.whatsappNumber || null;
+  const floatingWhatsappUrl = floatingWhatsappNumber
+    ? `https://wa.me/${normalizePhoneForWhatsApp(floatingWhatsappNumber)}`
     : null;
 
   return {
@@ -166,7 +176,14 @@ const getPublic = async () => {
     email,
     address: contactActive ? contactData.address || null : null,
     whatsappNumber,
-    whatsappUrl: socialMediaData.whatsappUrl || contactWhatsappUrl,
+    whatsappUrl: floatingWhatsappUrl || socialMediaData.whatsappUrl || contactWhatsappUrl,
+    messengerUrl: floatingContactData.messengerUrl || socialMediaData.messengerUrl || null,
+    floatingContact: {
+      phoneNumber: floatingContactData.phoneNumber || null,
+      whatsappNumber: floatingWhatsappNumber,
+      messengerUrl: floatingContactData.messengerUrl || null,
+      status: floatingContactData.status !== false,
+    },
     mapLink: contactActive ? contactData.mapLink || null : null,
     header: headerData,
     footer: footerData,
