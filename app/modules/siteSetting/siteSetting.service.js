@@ -134,7 +134,6 @@ const getPublic = async () => {
   const websiteFooterData = normalizeSettingData(websiteFooter?.data);
   const contactActive = contactData.status !== false;
   const whiteLogo = generalData.whiteLogo;
-  const darkLogo = generalData.darkLogo;
   const faviconLogo = generalData.faviconLogo;
   const scrollText = generalData.scrollText;
   const phone = contactActive
@@ -154,7 +153,7 @@ const getPublic = async () => {
 
   return {
     name: generalData.name || null,
-    logoFile: generalData.logoFile || whiteLogo || darkLogo || null,
+    logoFile: generalData.logoFile || whiteLogo || null,
     faviconFile: generalData.faviconFile || faviconLogo || null,
     marqueeText: generalData.marqueeText || scrollText || null,
     metaTitle: generalData.metaTitle || null,
