@@ -3,10 +3,14 @@ const ORDER_STATUS = {
   PACKAGING: "packaging",
   CONFIRMED: "confirmed",
   CANCELLED: "cancelled",
-  RETURNED: "returned",
   ON_HOLD: "on_hold",
-  IN_COURIER: "in_courier",
+  SENT_TO_COURIER: "sent_to_courier",
+  COURIER_IN_REVIEW: "courier_in_review",
+  COURIER_PENDING: "courier_pending",
+  COURIER_CANCELLED_RETURNED: "courier_cancelled_returned",
+  PARTLY_DELIVERED: "partly_delivered",
   DELIVERED: "delivered",
+  APPROVAL_PENDING_PAYMENT: "approval_pending_payment",
   INCOMPLETE: "incomplete",
 };
 

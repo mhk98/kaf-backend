@@ -100,7 +100,7 @@ const getOptions = async () => {
     db.supplier.findAll({ attributes: ["Id", "name"], order: [["name", "ASC"]] }),
     db.expenseCategory.findAll({ attributes: ["Id", "name"], order: [["name", "ASC"]] }),
   ]);
-  return { categories, products, suppliers, expenseCategories, orderStatuses: ["pending", "confirmed", "packaging", "on_hold", "in_courier", "delivered", "cancelled", "returned", "incomplete"] };
+  return { categories, products, suppliers, expenseCategories, orderStatuses: ["incomplete", "pending", "cancelled", "on_hold", "confirmed", "packaging", "sent_to_courier", "courier_in_review", "courier_pending", "courier_cancelled_returned", "partly_delivered", "delivered", "approval_pending_payment"] };
 };
 
 module.exports = { getReport, getOptions };

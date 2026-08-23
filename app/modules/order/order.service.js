@@ -11,7 +11,7 @@ const NotificationService = require("../notification/notification.service");
 const Order = db.order;
 const IpBlock = db.ipBlock;
 const User = db.user;
-const FAILED_DELIVERY_STATUSES = ["cancelled", "returned", "on_hold"];
+const FAILED_DELIVERY_STATUSES = ["cancelled", "courier_cancelled_returned", "on_hold"];
 const MANUAL_FRAUD_STATUSES = ["safe", "fake"];
 const ORDER_ASSIGNMENT_USER_ATTRIBUTES = [
   "Id",
@@ -603,21 +603,18 @@ const compactObject = (value) =>
   }, {});
 
 const mapSteadfastStatusToOrderStatus = (status) => {
-  const key = String(status || "").toLowerCase();
-  if (key === "delivered") {
-    return "delivered";
-  }
-  if (["cancelled", "cancelled_approval_pending"].includes(key)) return "cancelled";
-  if (key === "partial_delivered") return "returned";
-  if (key === "hold") return "on_hold";
+  const key = String(status || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (key === "delivered") return "delivered";
+  if (key === "cancelled") return "courier_cancelled_returned";
+  if (["partial_delivered", "partially_delivered"].includes(key)) return "partly_delivered";
+  if (key === "in_review") return "courier_in_review";
+  if (["pending", "hold", "unknown"].includes(key)) return "courier_pending";
   if ([
-    "pending",
-    "in_review",
+    "cancelled_approval_pending",
     "delivered_approval_pending",
     "partial_delivered_approval_pending",
-    "unknown",
     "unknown_approval_pending",
-  ].includes(key)) return "in_courier";
+  ].includes(key)) return "approval_pending_payment";
   return null;
 };
 
@@ -1228,7 +1225,7 @@ const sendOrderToSteadfastInDB = async (id, options = {}) => {
   const response = await steadfastRequest("/create_order", { method: "POST", body: payload });
   const consignment = response?.consignment || response || {};
   const steadfastStatus = consignment.status || response?.delivery_status || "in_review";
-  const orderStatus = mapSteadfastStatusToOrderStatus(steadfastStatus) || "in_courier";
+  const orderStatus = "sent_to_courier";
 
   await order.update({
     courier: "Steadfast",
@@ -1322,7 +1319,7 @@ const bulkSendOrdersToSteadfastInDB = async (orderIds = [], options = {}) => {
 
     await order.update({
       courier: "Steadfast",
-      status: "in_courier",
+      status: "sent_to_courier",
       note: mergeCourierMeta(order, "steadfast", {
         invoice: payload.invoice,
         consignmentId: row.consignment_id || null,
@@ -1417,7 +1414,7 @@ const updateOrderStatusInDB = async (id, status, actorUserId) => {
       title: "Order status updated",
       message: `${order.orderId || `Order #${order.Id}`} is now ${nextStatus}`,
       type: "order_status",
-      priority: ["cancelled", "returned", "incomplete"].includes(nextStatus) ? "high" : "normal",
+      priority: ["cancelled", "courier_cancelled_returned", "incomplete"].includes(nextStatus) ? "high" : "normal",
       url: `/#page=orders&orderStatus=${encodeURIComponent(nextStatus)}`,
       data: { orderId: order.Id, invoiceId: order.orderId, status: nextStatus },
       excludeUserId: actorUserId,

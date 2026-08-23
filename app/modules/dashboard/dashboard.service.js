@@ -9,16 +9,20 @@ const daysAgo = (n) => {
 };
 
 const STATUS_CONFIG = [
-  { key: "all",        label: "All Order",          color: "#3b82f6" },
-  { key: "pending",    label: "Pending Orders",     color: "#8b5cf6" },
-  { key: "confirmed",  label: "Confirmed Orders",   color: "#06b6d4" },
-  { key: "packaging",  label: "Packaging Orders",   color: "#a855f7" },
-  { key: "on_hold",    label: "On Hold Orders",     color: "#6b7280" },
-  { key: "in_courier", label: "In Courier Orders",  color: "#3b82f6" },
-  { key: "delivered",  label: "Delivered Orders",   color: "#22c55e" },
-  { key: "cancelled",  label: "Cancelled Orders",   color: "#ec4899" },
-  { key: "returned",   label: "Returned Orders",    color: "#f59e0b" },
-  { key: "incomplete", label: "Incomplete",         color: "#6366f1" },
+  { key: "all", label: "All Orders", color: "#3b82f6" },
+  { key: "incomplete", label: "Incomplete", color: "#f97316" },
+  { key: "pending", label: "Pending", color: "#8b5cf6" },
+  { key: "cancelled", label: "Cancelled", color: "#ec4899" },
+  { key: "on_hold", label: "On Hold", color: "#6b7280" },
+  { key: "confirmed", label: "Confirmed", color: "#06b6d4" },
+  { key: "packaging", label: "Packaging", color: "#a855f7" },
+  { key: "sent_to_courier", label: "Sent to Courier", color: "#2563eb" },
+  { key: "courier_in_review", label: "In Review", color: "#6366f1" },
+  { key: "courier_pending", label: "Pending", color: "#eab308" },
+  { key: "courier_cancelled_returned", label: "Cancelled (Returned)", color: "#ef4444" },
+  { key: "partly_delivered", label: "Partly Delivered", color: "#14b8a6" },
+  { key: "delivered", label: "Delivered", color: "#22c55e" },
+  { key: "approval_pending_payment", label: "Approval Pending (Payment)", color: "#f59e0b" },
 ];
 
 const SOURCE_COLORS = [
@@ -205,8 +209,8 @@ const getDashboardStats = async ({ fromDate, toDate } = {}, user = {}) => {
 
   // ── 6. Delivery stats ───────────────────────────────────────────────────
   const deliveredRow   = statusMap["delivered"]   || { count: 0, bill: 0 };
-  const returnedRow    = statusMap["returned"]    || { count: 0, bill: 0 };
-  const processingStatuses = ["pending", "packaging", "confirmed", "in_courier", "on_hold", "incomplete"];
+  const returnedRow = statusMap["courier_cancelled_returned"] || { count: 0, bill: 0 };
+  const processingStatuses = ["pending", "packaging", "confirmed", "sent_to_courier", "courier_in_review", "courier_pending", "partly_delivered", "approval_pending_payment", "on_hold", "incomplete"];
   const processingCount = processingStatuses.reduce((s, k) => s + (statusMap[k]?.count || 0), 0);
   const processingBill  = processingStatuses.reduce((s, k) => s + (statusMap[k]?.bill  || 0), 0);
 

@@ -6,8 +6,8 @@ const ApiError = require("../../../error/ApiError");
 
 const buildOrderWhere = (filter) => {
   if (!filter || filter === "All") return {};
-  const ACTIVE_STATUSES   = ["pending", "confirmed", "packaging", "on_hold", "in_courier", "delivered"];
-  const INACTIVE_STATUSES = ["cancelled", "returned", "incomplete"];
+  const ACTIVE_STATUSES   = ["pending", "confirmed", "packaging", "on_hold", "sent_to_courier", "courier_in_review", "courier_pending", "partly_delivered", "approval_pending_payment", "delivered"];
+  const INACTIVE_STATUSES = ["cancelled", "courier_cancelled_returned", "incomplete"];
   if (filter === "Active Customers")   return { status: { [Op.in]: ACTIVE_STATUSES   } };
   if (filter === "Inactive Customers") return { status: { [Op.in]: INACTIVE_STATUSES } };
   return {};

@@ -47,7 +47,7 @@ const buildCourierStats = (orders) => {
     row.totalParcel += 1;
     const keyStatus = statusKey(order.status);
     if (keyStatus === "delivered") row.delivered += 1;
-    if (["returned", "cancelled", "incomplete"].includes(keyStatus)) {
+    if (["courier_cancelled_returned", "cancelled", "incomplete"].includes(keyStatus)) {
       row.return += 1;
     }
   });

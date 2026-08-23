@@ -5,15 +5,19 @@ const ApiError = require("../../../error/ApiError");
 const M = () => db.orderStatus;
 
 const DEFAULT_ORDER_STATUSES = [
-  { key: "pending", label: "Pending" },
-  { key: "packaging", label: "Packaging" },
-  { key: "confirmed", label: "Confirmed" },
-  { key: "cancelled", label: "Cancelled" },
-  { key: "returned", label: "Returned" },
-  { key: "on_hold", label: "On Hold" },
-  { key: "in_courier", label: "In Courier" },
-  { key: "delivered", label: "Delivered" },
   { key: "incomplete", label: "Incomplete" },
+  { key: "pending", label: "Pending" },
+  { key: "cancelled", label: "Cancelled" },
+  { key: "on_hold", label: "On Hold" },
+  { key: "confirmed", label: "Confirmed" },
+  { key: "packaging", label: "Packaging" },
+  { key: "sent_to_courier", label: "Sent to Courier" },
+  { key: "courier_in_review", label: "In Review" },
+  { key: "courier_pending", label: "Pending" },
+  { key: "courier_cancelled_returned", label: "Cancelled (Returned)" },
+  { key: "partly_delivered", label: "Partly Delivered" },
+  { key: "delivered", label: "Delivered" },
+  { key: "approval_pending_payment", label: "Approval Pending (Payment)" },
 ];
 
 const toOrderStatusKey = (value) =>
@@ -38,9 +42,10 @@ const getActiveStatusOptions = async () => {
     order: [["createdAt", "ASC"], ["Id", "ASC"]],
   });
 
-  const normalized = rows.map(normalizeRow).filter((row) => row.key);
-  if (!normalized.length) return DEFAULT_ORDER_STATUSES;
-
+  const normalized = [
+    ...DEFAULT_ORDER_STATUSES,
+    ...rows.map(normalizeRow).filter((row) => row.key),
+  ];
   const seen = new Set();
   return normalized.filter((row) => {
     if (seen.has(row.key)) return false;
