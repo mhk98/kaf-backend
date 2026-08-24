@@ -619,7 +619,7 @@ const mapSteadfastStatusToOrderStatus = (status) => {
 };
 
 const canSendToCourier = (order) =>
-  OrderStatusService.toOrderStatusKey(order?.status) === "confirmed";
+  OrderStatusService.toOrderStatusKey(order?.status) === "packaging";
 
 const mergeCourierMeta = (order, provider, data = {}) => {
   const meta = getOrderMeta(order);
@@ -1207,7 +1207,7 @@ const deleteOrderFromDB = async (id) => {
 const sendOrderToSteadfastInDB = async (id, options = {}) => {
   const order = await getOrderForCourier(id);
   if (!canSendToCourier(order)) {
-    throw new ApiError(400, "Only confirmed orders can be sent to Steadfast");
+    throw new ApiError(400, "Only packaging orders can be sent to Steadfast");
   }
   const existing = getSteadfastMeta(order);
   if (existing.trackingCode && !options.force) {
@@ -1286,7 +1286,7 @@ const bulkSendOrdersToSteadfastInDB = async (orderIds = [], options = {}) => {
         orderId: id,
         invoice: order.orderId,
         status: "skipped",
-        message: "Only confirmed orders can be sent to Steadfast",
+        message: "Only packaging orders can be sent to Steadfast",
         orderStatus: order.status,
       });
       return;

@@ -39,6 +39,7 @@ const ExpenseRoutes            = require("../modules/expense/expense.routes");
 const ReportRoutes             = require("../modules/report/report.routes");
 const CacheRoutes              = require("../modules/cache/cache.routes");
 const IntegrationRoutes        = require("../modules/integration/integration.routes");
+const ResellerRoutes           = require("../modules/reseller/reseller.routes");
 
 const router = express.Router();
 
@@ -72,6 +73,7 @@ const moduleRoutes = [
   { path: "/google-ads",           route: GoogleAdsRoutes },
   { path: "/banner-categories",    route: BannerCategoryRoutes },
   { path: "/banners",              route: BannerRoutes },
+  { path: "/resellers",            route: ResellerRoutes },
   { path: "/tracking",             route: TrackingRoutes },
   { path: "/coupon-codes",         route: CouponCodeRoutes },
   { path: "/visitor-stats",        route: VisitorStatRoutes },

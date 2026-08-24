@@ -149,6 +149,10 @@ db.bannerCategory =
     db.sequelize,
     DataTypes,
   );
+db.reseller = require("../app/modules/reseller/reseller.model")(
+  db.sequelize,
+  DataTypes,
+);
 db.banner = require("../app/modules/banner/banner.model")(
   db.sequelize,
   DataTypes,

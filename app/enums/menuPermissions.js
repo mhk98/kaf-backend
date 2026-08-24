@@ -85,6 +85,7 @@ const MENU_PERMISSIONS = {
   PAYROLL_FINE: "payroll_fine",
   EXPIRED_PRODUCT: "expired_product",
   PROFILE: "profile",
+  RESELLER: "reseller",
 };
 
 const ALL_MENU_PERMISSIONS = Object.values(MENU_PERMISSIONS);
@@ -103,6 +104,7 @@ const HOLYDEEN_DASHBOARD_MENU_PERMISSIONS = [
   "admin_permissions",
   "customers",
   "ip_block",
+  "reseller",
   "website_setting",
   "api_integration",
   "marketing_tools",
