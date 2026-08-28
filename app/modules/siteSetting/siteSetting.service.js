@@ -162,6 +162,7 @@ const getPublic = async () => {
     bkashNumber: generalData.bkashNumber || null,
     nagadNumber: generalData.nagadNumber || null,
     rocketNumber: generalData.rocketNumber || null,
+    storeLocations: Array.isArray(generalData.storeLocations) ? generalData.storeLocations : [],
     orderBlockLimit: generalData.orderBlockLimit || null,
     blockTime: generalData.blockTime || null,
     timeUnit: generalData.timeUnit || null,
