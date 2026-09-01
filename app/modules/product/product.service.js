@@ -208,12 +208,14 @@ const insertIntoDB = async (data, files = []) => {
     metaTitle, metaKeyword, metaDescription,
     giftTitle, giftPrice,
     bestDeals, freeShipping, status,
+    relatedProductIds: relatedProductIdsRaw,
     variations: variationsRaw,
     purchaseEnabled, supplierId, payAmount, purchaseDate,
   } = data;
 
   // collect uploaded image paths
   const imagePaths = files.map(f => f.filename || f.path);
+  const relatedProductIds = parseIdArray(relatedProductIdsRaw);
 
   const payload = {
     name,
@@ -234,6 +236,7 @@ const insertIntoDB = async (data, files = []) => {
     giftTitle:       giftTitle       || null,
     giftPrice:       giftPrice       ? Number(giftPrice)       : null,
     images:          imagePaths.length ? imagePaths : null,
+    relatedProductIds: relatedProductIds.length ? relatedProductIds : null,
     bestDeals:       bestDeals === 'true'    || bestDeals === true,
     freeShipping:    freeShipping === 'true' || freeShipping === true,
     status:          status || "Active",
@@ -392,6 +395,7 @@ const updateOneFromDB = async (id, payload, files = []) => {
     metaTitle, metaKeyword, metaDescription,
     giftTitle, giftPrice,
     bestDeals, freeShipping, status,
+    relatedProductIds: relatedProductIdsRaw,
     variations: variationsRaw,
     keptImages: keptImagesRaw,
     purchaseEnabled, supplierId, payAmount, purchaseDate,
@@ -406,6 +410,9 @@ const updateOneFromDB = async (id, payload, files = []) => {
     try { keptImages = typeof keptImagesRaw === 'string' ? JSON.parse(keptImagesRaw) : (keptImagesRaw || []); } catch { keptImages = []; }
     const newImagePaths = files.map(f => f.filename || f.path);
     const mergedImages = [...keptImages, ...newImagePaths];
+    const relatedProductIds = parseIdArray(relatedProductIdsRaw).filter(
+      (rid) => rid !== Number(id),
+    );
 
     const data = {
       name,
@@ -426,6 +433,7 @@ const updateOneFromDB = async (id, payload, files = []) => {
       giftTitle:       giftTitle       || null,
       giftPrice:       giftPrice       ? Number(giftPrice)       : null,
       images:          mergedImages.length ? mergedImages : null,
+      relatedProductIds: relatedProductIds.length ? relatedProductIds : null,
       bestDeals:       bestDeals === 'true'    || bestDeals === true,
       freeShipping:    freeShipping === 'true' || freeShipping === true,
       status:          status || "Active",
@@ -508,6 +516,16 @@ const parseJsonArray = (value) => {
     return [];
   }
 };
+
+// Normalise a related-products value (JSON string / array) into a de-duped
+// list of positive integer product IDs.
+const parseIdArray = (value) => [
+  ...new Set(
+    parseJsonArray(value)
+      .map((v) => Number(v))
+      .filter((n) => Number.isInteger(n) && n > 0),
+  ),
+];
 
 const getNameMap = async (Model, ids) => {
   const cleanIds = [...new Set(ids.filter(Boolean).map((id) => Number(id)))];
@@ -593,6 +611,9 @@ const toStorefrontProduct = (product, maps = {}) => {
     sku: plain.sku,
     freeShipping: Boolean(plain.freeShipping),
     bestDeals: Boolean(plain.bestDeals),
+    relatedProductIds: parseJsonArray(plain.relatedProductIds)
+      .map((rid) => Number(rid))
+      .filter((rid) => Number.isInteger(rid) && rid > 0),
     createdAt: plain.createdAt,
     inStock: stock > 0,
     status: plain.status,
@@ -639,7 +660,34 @@ const getStorefrontProductById = async (id) => {
     getNameMap(db.color, variationColorIds),
   ]);
 
-  return toStorefrontProduct(product, { categories, subcategories, childcategories, colors });
+  const storefront = toStorefrontProduct(product, { categories, subcategories, childcategories, colors });
+
+  // manually curated related products (admin-selected), in the chosen order
+  const relatedIds = (storefront.relatedProductIds || []).filter((rid) => rid !== storefront.Id);
+  storefront.relatedProducts = [];
+  if (relatedIds.length) {
+    const relatedRows = await Product.findAll({
+      where: { Id: { [Op.in]: relatedIds }, status: { [Op.ne]: "Inactive" } },
+      include: [{ model: Variation, as: "variations" }],
+      paranoid: true,
+    });
+    const rColorIds = relatedRows.flatMap((p) => (p.variations || []).map((v) => v.colorId));
+    const [rCat, rSub, rChild, rColors] = await Promise.all([
+      getNameMap(db.category, relatedRows.map((p) => p.categoryId)),
+      getNameMap(db.subcategory, relatedRows.map((p) => p.subcategoryId)),
+      getNameMap(db.childcategory, relatedRows.map((p) => p.childcategoryId)),
+      getNameMap(db.color, rColorIds),
+    ]);
+    const byId = new Map(
+      relatedRows.map((p) => [
+        p.Id,
+        toStorefrontProduct(p, { categories: rCat, subcategories: rSub, childcategories: rChild, colors: rColors }),
+      ]),
+    );
+    storefront.relatedProducts = relatedIds.map((rid) => byId.get(rid)).filter(Boolean);
+  }
+
+  return storefront;
 };
 
 const ProductService = {

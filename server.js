@@ -92,13 +92,13 @@ app.options("*", cors(corsOptions));
 
 // Strict limiter for auth endpoints
 const authLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
+  windowMs: 1 * 60 * 1000, // 1 minute
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     status: "error",
-    message: "Too many attempts. Try again in 15 minutes.",
+    message: "Too many attempts. Try again in 1 minutes.",
   },
   skipSuccessfulRequests: true,
 });
@@ -140,7 +140,13 @@ app.use(userLogHistory);
    STATIC FILES
 ======================== */
 
-app.use("/images", express.static("images"));
+const path = require("path");
+const { UPLOAD_DIR } = require("./app/middlewares/upload");
+
+// 1) user-uploaded files — persistent dir (IMAGE_UPLOAD_DIR) when configured
+app.use("/images", express.static(UPLOAD_DIR));
+// 2) repo-bundled seed assets (images/storefront/*) — fallthrough on 404
+app.use("/images", express.static(path.resolve("images")));
 
 /* ========================
    SWAGGER DOCS

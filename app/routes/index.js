@@ -9,6 +9,7 @@ const MenuRoutes = require("../modules/menu/menu.routes");
 const SubcategoryRoutes = require("../modules/subcategory/subcategory.routes");
 const ChildcategoryRoutes = require("../modules/childcategory/childcategory.routes");
 const BrandRoutes = require("../modules/brand/brand.routes");
+const ClientRoutes = require("../modules/client/client.routes");
 const ColorRoutes = require("../modules/color/color.routes");
 const AttributeRoutes = require("../modules/attribute/attribute.routes");
 const ReviewRoutes = require("../modules/review/review.routes");
@@ -54,6 +55,7 @@ const moduleRoutes = [
   { path: "/subcategory",          route: SubcategoryRoutes },
   { path: "/childcategory",        route: ChildcategoryRoutes },
   { path: "/brand",                route: BrandRoutes },
+  { path: "/clients",              route: ClientRoutes },
   { path: "/color",                route: ColorRoutes },
   { path: "/attribute",            route: AttributeRoutes },
   { path: "/review",               route: ReviewRoutes },

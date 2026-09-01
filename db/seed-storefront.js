@@ -69,11 +69,19 @@ async function seed() {
     colors.push(await upsertBy(db.color, { name }, { name, hex, status: "Active" }));
   }
 
-  const partnerNames = ["Aster Group", "Bengal Works", "Dhaka Studio", "Northstar", "Padma Digital", "Shapla Foundation", "Vertex Labs", "Meghna Foods", "Urban Trust", "Delta Network", "Greenline", "Summit House"];
-  for (let i = 0; i < partnerNames.length; i++) {
-    const name = partnerNames[i];
-    const logo = writeAsset(`partner-${i + 1}.svg`, svg(name, "KAF Partner", 420, 180, palettes[i % palettes.length], "banner"));
-    await upsertBy(db.brand, { name }, { name, logo, linkUrl: null, sortOrder: i + 1, isActive: true, status: "Active" });
+  const clientLogos = [
+    { name: "Grameenphone", logo: "https://commons.wikimedia.org/wiki/Special:FilePath/Grameenphone%20Logo%20GP%20Logo.svg" },
+    { name: "HP", logo: "https://commons.wikimedia.org/wiki/Special:FilePath/HP%20logo%202008.svg" },
+    { name: "Ericsson", logo: "https://commons.wikimedia.org/wiki/Special:FilePath/Ericsson%20logo%20(2).svg" },
+    { name: "UNDP", logo: "https://commons.wikimedia.org/wiki/Special:FilePath/UNDP%20logo.svg" },
+    { name: "SKF", logo: "https://commons.wikimedia.org/wiki/Special:FilePath/SKF%20logo.svg" },
+    { name: "SK+F", logo: "https://commons.wikimedia.org/wiki/Special:FilePath/Logo%20of%20SK%2BF.svg" },
+    { name: "Qatar Airways", logo: "https://commons.wikimedia.org/wiki/Special:FilePath/Qatar%20Airways%20Logo.png" },
+    { name: "Wikimedia Bangladesh", logo: "https://commons.wikimedia.org/wiki/Special:FilePath/Wikimedia%20Bangladesh%20logo.svg" },
+  ];
+  for (let i = 0; i < clientLogos.length; i++) {
+    const { name, logo } = clientLogos[i];
+    await upsertBy(db.client, { name }, { name, logo, linkUrl: null, sortOrder: i + 1, isActive: true, status: "Active" });
   }
 
   const productWords = ["Essential Tee", "Premium Polo", "Comfort Shirt", "Classic Panjabi", "Everyday Trouser", "Urban Denim"];

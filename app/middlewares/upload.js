@@ -3,8 +3,34 @@ const fs = require("fs");
 const path = require("path");
 const { randomUUID } = require("crypto");
 
-const UPLOAD_DIR = "images";
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+// Where uploaded files are written on disk.
+// Set IMAGE_UPLOAD_DIR to an absolute path OUTSIDE the deploy/repo directory
+// (e.g. /home/<user>/kaf-uploads) so images survive redeploys.
+// If that path is missing/unwritable (e.g. on a dev machine), fall back to the
+// in-repo "images" folder so the server still starts.
+const REPO_IMAGE_DIR = path.resolve("images");
+
+function resolveUploadDir() {
+  const configured = process.env.IMAGE_UPLOAD_DIR
+    ? path.resolve(process.env.IMAGE_UPLOAD_DIR)
+    : REPO_IMAGE_DIR;
+  try {
+    fs.mkdirSync(configured, { recursive: true });
+    fs.accessSync(configured, fs.constants.W_OK);
+    return configured;
+  } catch (err) {
+    if (configured !== REPO_IMAGE_DIR) {
+      console.warn(
+        `[upload] IMAGE_UPLOAD_DIR "${configured}" is not usable (${err.code || err.message}); ` +
+          `falling back to "${REPO_IMAGE_DIR}". Uploads here may be lost on redeploy.`,
+      );
+    }
+    fs.mkdirSync(REPO_IMAGE_DIR, { recursive: true });
+    return REPO_IMAGE_DIR;
+  }
+}
+
+const UPLOAD_DIR = resolveUploadDir();
 
 // Allowed MIME types — zip removed (security risk)
 const ALLOWED_MIME_TYPES = new Set([
@@ -85,6 +111,7 @@ const uploadMultiple = multer({
 }).array("gallery_images", 10);
 
 module.exports = {
+  UPLOAD_DIR,
   uploadFile,
   uploadPdf,
   uploadSingle,

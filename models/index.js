@@ -44,6 +44,10 @@ db.childcategory = require("../app/modules/childcategory/childcategory.model")(
   DataTypes,
 );
 db.brand = require("../app/modules/brand/brand.model")(db.sequelize, DataTypes);
+db.client = require("../app/modules/client/client.model")(
+  db.sequelize,
+  DataTypes,
+);
 db.color = require("../app/modules/color/color.model")(db.sequelize, DataTypes);
 db.attribute = require("../app/modules/attribute/attribute.model")(
   db.sequelize,
@@ -427,6 +431,7 @@ const ensureProductStatusNoteColumns = async () => {
   });
   await maybeAdd("giftImage", { type: DataTypes.STRING(500), allowNull: true });
   await maybeAdd("images", { type: DataTypes.JSON, allowNull: true });
+  await maybeAdd("relatedProductIds", { type: DataTypes.JSON, allowNull: true });
   await maybeAdd("bestDeals", {
     type: DataTypes.BOOLEAN,
     allowNull: true,
