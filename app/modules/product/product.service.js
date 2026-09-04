@@ -593,6 +593,8 @@ const toStorefrontProduct = (product, maps = {}) => {
     file: images[0] || null,
     gallery: images,
     features: plain.shortDescription ? [plain.shortDescription] : parseJsonArray(plain.features),
+    description: plain.description || null,
+    shortDescription: plain.shortDescription || null,
     variants: variations.map((variation) => ({
       colorId: variation.colorId || null,
       colorName: maps.colors?.get(Number(variation.colorId)) || null,
